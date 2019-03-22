@@ -1,8 +1,9 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const { MongoMemoryServer } = require("mongodb-memory-server");
 const app = require("../../app");
 const Book = require("../../models/book");
+const { sequelize } = require("../../models");
+const createAuthorsAndBooks = require("../../seed");
 
 const route = (params = "") => {
   const path = "/api/v1/books";
@@ -14,53 +15,45 @@ describe("Books", () => {
   let db;
 
   beforeAll(async () => {
-    jest.setTimeout(120000);
-    mongod = new MongoMemoryServer();
-    const uri = await mongod.getConnectionString();
-    await mongoose.connect(uri, {
-      autoReconnect: true,
-      reconnectTries: Number.MAX_VALUE,
-      reconnectInterval: 1000
-    });
-    db = mongoose.connection;
+    await sequelize.sync({ force: true });
+    await createAuthorsAndBooks();
   });
 
-  beforeEach(async () => {
-    await Book.insertMany([
-      { title: "Animal Farm", author: "George Orwell" },
-      { title: "1984", author: "George Orwell" },
-      { title: "Homage to Catalonia", author: "George Orwell" }
-    ]);
-  });
+  beforeEach(async () => {});
 
-  afterEach(async () => {
-    await db.dropCollection("books");
-  });
+  afterEach(async () => {});
 
   afterAll(async () => {
-    mongoose.disconnect();
-    await mongod.stop();
+    sequelize.close();
   });
 
-  describe("[GET] Search for books", () => {
-    test("returns all books", () => {
-      const expectedBooks = [
-        { title: "Animal Farm", author: "George Orwell" },
-        { title: "1984", author: "George Orwell" },
-        { title: "Homage to Catalonia", author: "George Orwell" }
-      ];
+  describe.only("[GET] Search for books", () => {
+    const expectedBooks = [
+      { id: 1, title: "Animal Farm", author: { name: "Orwell" } },
+      { id: 2, title: "1984", author: { name: "Orwell" } },
+      {
+        id: 5,
+        title: "Brave New World",
+        author: { name: "Aldous Huxley" }
+      },
+      { id: 6, title: "Fahrenheit 451", author: { name: "Ray Bradbury" } }
+    ];
+    const verifyBooks = (res, expected) => {
+      const books = res.body;
+      books.forEach((book, index) => {
+        expect(book.title).toBe(expected[index].title);
+        expect(book.author.title).toEqual(expected[index].author.name);
+      });
+    };
 
-      return request(app)
+    test.only("returns all books", async done => {
+      await request(app)
         .get(route())
         .expect("content-type", /json/)
         .expect(200)
-        .then(res => {
-          const books = res.body;
-          books.forEach((book, index) => {
-            expect(book.title).toBe(expectedBooks[index].title);
-            expect(book.author).toBe(expectedBooks[index].author);
-          });
-        });
+        .then(res => verifyBooks(res, expectedBooks));
+
+      done();
     });
 
     test("returns books matching the title query", () => {
