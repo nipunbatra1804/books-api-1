@@ -7,14 +7,10 @@
     "node": "11.8.0"
   },
   "scripts": {
-    "start": "NODE_ENV=production node server.js",
-    "start:db": "mongod --dbpath ~/data/db",
-    "start:server": "nodemon server.js",
-    "start:debug": "nodemon --inspect-brk server.js",
-    "dev": "npm run start:server",
-    "dev:debug": "npm run start:db & npm run start:debug",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "start": "cross-env NODE_ENV=production node server.js",
+    "start:dev": "cross-env NODE_ENV=development nodemon server.js",
+    "test": "cross-env NODE_ENV=test jest",
+    "test:watch": "cross-env NODE_ENV=test jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -27,13 +23,15 @@
     "pg": "^7.9.0",
     "pg-hstore": "^2.3.2",
     "sequelize": "^5.1.0",
-    "uuid": "^3.3.2"
+    "uuid": "^3.3.2",
+    "cross-env": "^5.2.0"
   },
   "devDependencies": {
     "dotenv": "^7.0.0",
     "jest": "^24.5.0",
     "mongodb-memory-server": "^4.2.1",
     "nodemon": "^1.18.10",
+    "sqlite3": "^4.0.6",
     "supertest": "^4.0.0"
   }
 }

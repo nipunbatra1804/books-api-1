@@ -68,7 +68,6 @@ router
       const [foundAuthor, created] = await Author.findOrCreate({
         where: { title: req.body.author }
       });
-      console.log(foundAuthor);
       const result = await book.update({ title: req.body.title });
       if (created) {
         await result.setAuthor(foundAuthor);
@@ -82,12 +81,17 @@ router
       res.sendStatus(400);
     }
   })
-  .delete((req, res) => {
-    const book = oldbooks.find(b => b.id === req.params.id);
-    if (book) {
-      res.sendStatus(202);
-    } else {
-      res.sendStatus(400);
+  .delete(async (req, res) => {
+    try {
+      const { id } = req.params;
+      const book = await Book.destroy({ where: { id: id } });
+      if (book) {
+        return res.sendStatus(202);
+      } else {
+        return res.sendStatus(404);
+      }
+    } catch (err) {
+      return res.sendStatus(404);
     }
   });
 

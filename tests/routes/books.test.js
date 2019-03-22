@@ -85,7 +85,7 @@ describe("Books", () => {
   });
 
   describe("[POST] Creates a new book", () => {
-    test.skip("denies access when no token is given", () => {
+    test("denies access when no token is given", () => {
       return request(app)
         .post(route())
         .send({ title: "The Handmaid's Tale", author: "Margaret Atwood" })
@@ -94,7 +94,7 @@ describe("Books", () => {
         });
     });
 
-    test.skip("denies access when invalid token is given", () => {
+    test("denies access when invalid token is given", () => {
       return request(app)
         .post(route())
         .set("Authorization", "Bearer some-invalid-token")
@@ -124,7 +124,7 @@ describe("Books", () => {
   });
 
   describe("[PUT] Edits an existing book", () => {
-    test.only("edits a book's title and author", async () => {
+    test("edits a book's title and author", async () => {
       const { id } = await Book.findOne({ where: { title: "1984" } });
       //console.log(id);
       const res = await request(app)
@@ -161,22 +161,26 @@ describe("Books", () => {
     });
   });
 
-  describe.skip("[DELETE] Removes an existing book", () => {
+  describe("[DELETE] Removes an existing book", () => {
     test("removes a book from the database", async () => {
-      const { _id } = await Book.findOne({ title: "1984" });
+      const delBook = await Book.findOne({
+        where: { title: "The Handmaid's Tale" }
+      });
 
       await request(app)
-        .delete(route(_id))
+        .delete(route(delBook.id))
         .expect(202);
-
-      const book = await Book.findById(_id);
+      const book = await Book.findOne({
+        where: { id: delBook.id },
+        include: [Author]
+      });
       expect(book).toBe(null);
     });
 
     test("returns 404 Not Found as there is no such book", done => {
-      const _id = "5c8fb5c41529bf25dcba41a7";
+      const id = "5c8fb5c41529bf25dcba41a7";
       request(app)
-        .delete(route(_id))
+        .delete(route(id))
         .expect(404, done);
     });
   });
