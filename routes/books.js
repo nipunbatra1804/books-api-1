@@ -24,24 +24,61 @@ const verifyToken = (req, res, next) => {
 router
   .route("/")
   .get(async (req, res) => {
-    const books = await Book.findAll({
-      include: [Author]
-    });
+    const { title, author } = req.query;
+    let books;
+    if (title) {
+      books = await Book.findAll({
+        where: { title: title },
+        include: [Author]
+      });
+    } else if (author) {
+      books = await Book.findAll({
+        include: [{ model: Author, where: { title: author } }]
+      });
+    } else {
+      books = await Book.findAll({
+        include: [Author]
+      });
+    }
     return res.json(books);
   })
-  .post(verifyToken, (req, res) => {
-    const book = req.body;
-    book.id = uuid();
-    res.status(201).json(req.body);
+  .post(verifyToken, async (req, res) => {
+    const { title, author } = req.body;
+    const [foundAuthor, created] = await Author.findOrCreate({
+      where: { title: author }
+    });
+    const newBook = await Book.create({ title: title });
+    await newBook.setAuthor(foundAuthor);
+    const newBookwAuthor = await Book.findOne({
+      where: { id: newBook.id },
+      include: [Author]
+    });
+
+    res.status(201).json(newBookwAuthor);
   });
 
 router
   .route("/:id")
-  .put((req, res) => {
-    const book = oldbooks.find(b => b.id === req.params.id);
-    if (book) {
-      res.status(202).json(req.body);
-    } else {
+  .put(async (req, res) => {
+    try {
+      const book = await Book.findOne({
+        where: { id: req.params.id },
+        include: [Author]
+      });
+      const [foundAuthor, created] = await Author.findOrCreate({
+        where: { title: req.body.author }
+      });
+      console.log(foundAuthor);
+      const result = await book.update({ title: req.body.title });
+      if (created) {
+        await result.setAuthor(foundAuthor);
+      }
+      const updatedBook = await Book.findOne({
+        where: { id: req.params.id },
+        include: [Author]
+      });
+      res.status(202).json(updatedBook);
+    } catch (err) {
       res.sendStatus(400);
     }
   })
