@@ -1,15 +1,15 @@
 module.exports = (sequelize, type) => {
-  const Book = sequelize.define(
-    "book",
+  const Author = sequelize.define(
+    "author",
     {
       id: { type: type.INTEGER, primaryKey: true, autoIncrement: true },
       title: type.STRING
     },
     { timestamps: false }
   );
-  Book.associate = models => {
-    Book.belongsTo(models.Author);
+  Author.associate = models => {
+    Author.hasMany(models.Book);
   };
 
-  return Book;
+  return Author;
 };
